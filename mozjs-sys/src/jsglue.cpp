@@ -286,6 +286,28 @@ struct ProxyTraps {
   // isScripted
 };
 
+
+typedef void (*InvokeScriptScriptPreparerHook)(JS::HandleObject global, Closure& closure);
+
+struct RustEnvironmentPreparer : public js::ScriptEnvironmentPreparer {
+  JSContext* cx;
+  explicit RustEnvironmentPreparer(JSContext* cx, InvokeScriptScriptPreparerHook hook) : cx(cx), invokeScriptPreparerHook(hook) {}
+  void invoke(JS::HandleObject global, Closure& closure) override {
+    MOZ_ASSERT(JS_IsGlobalObject(global));
+
+    if (invokeScriptPreparerHook) {
+      invokeScriptPreparerHook(global, closure);
+    }
+  }
+
+  private:
+    InvokeScriptScriptPreparerHook invokeScriptPreparerHook;
+};
+
+void InitScriptEnvironmentPreparer(JSContext* cx, InvokeScriptScriptPreparerHook hook) {
+  js::SetScriptEnvironmentPreparer(cx, new RustEnvironmentPreparer(cx, hook));
+}
+
 static int HandlerFamily;
 
 #define DEFER_TO_TRAP_OR_BASE_CLASS(_base)                                    \
