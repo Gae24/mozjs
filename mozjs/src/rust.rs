@@ -7,7 +7,7 @@
 use std::cell::Cell;
 use std::char;
 use std::default::Default;
-use std::ffi::{CStr, CString};
+use std::ffi::{c_char, c_void, CStr, CString};
 use std::marker::PhantomData;
 use std::mem::MaybeUninit;
 use std::ops::{Deref, DerefMut};
@@ -30,6 +30,7 @@ use crate::glue::AppendToRootedObjectVector;
 use crate::glue::{CreateRootedIdVector, CreateRootedObjectVector};
 use crate::glue::{
     DeleteCompileOptions, DeleteRootedObjectVector, DescribeScriptedCaller, DestroyRootedIdVector,
+    PendingExceptionStackInfo,
 };
 use crate::glue::{DeleteJSAutoStructuredCloneBuffer, NewJSAutoStructuredCloneBuffer};
 use crate::glue::{
@@ -45,6 +46,7 @@ use crate::jsapi::HandleObjectVector as RawHandleObjectVector;
 use crate::jsapi::HandleValue as RawHandleValue;
 use crate::jsapi::JS_AddExtraGCRootsTracer;
 use crate::jsapi::MutableHandleIdVector as RawMutableHandleIdVector;
+use crate::jsapi::MutableHandleValue as RawMutableHandleValue;
 use crate::jsapi::{already_AddRefed, jsid};
 use crate::jsapi::{BuildStackString, CaptureCurrentStack, StackFormat};
 use crate::jsapi::{HandleValueArray, StencilRelease};
@@ -1056,6 +1058,56 @@ pub unsafe fn describe_scripted_caller(cx: *mut JSContext) -> Result<ScriptedCal
     })
 }
 
+pub struct ErrorInfo {
+    pub message: String,
+    pub filename: String,
+    pub line: u32,
+    pub col: u32,
+}
+
+unsafe extern "C" fn fill_string_callback(ptr: *const c_char, len: usize, target: *mut c_void) {
+    let target = &mut *(target as *mut String);
+
+    if ptr.is_null() {
+        return;
+    }
+
+    let slice = slice::from_raw_parts(ptr as *const u8, len);
+    *target = str::from_utf8_unchecked(slice).to_owned();
+}
+
+/// Retrieve error info from the pending exception stack, by clearing it.
+/// Return None if there isn't one or if it is a warning.
+pub unsafe fn error_info_from_exception_stack(
+    cx: *mut JSContext,
+    rval: RawMutableHandleValue,
+) -> Option<ErrorInfo> {
+    let mut message = String::new();
+    let mut filename = String::new();
+
+    let mut line = 0;
+    let mut col = 0;
+
+    if !PendingExceptionStackInfo(
+        cx,
+        Some(fill_string_callback),
+        &mut message as *mut String as *mut c_void,
+        &mut filename as *mut String as *mut c_void,
+        &mut line,
+        &mut col,
+        rval,
+    ) {
+        return None;
+    }
+
+    Some(ErrorInfo {
+        message,
+        filename,
+        line,
+        col,
+    })
+}
+
 pub struct CapturedJSStack<'a> {
     cx: *mut JSContext,
     stack: RootedGuard<'a, *mut JSObject>,
@@ -1299,6 +1351,7 @@ pub mod wrappers {
     use super::*;
     use crate::glue;
     use crate::glue::EncodedStringCallback;
+    use crate::glue::StringCallback;
     use crate::jsapi;
     use crate::jsapi::js::TempAllocPolicy;
     use crate::jsapi::jsid;

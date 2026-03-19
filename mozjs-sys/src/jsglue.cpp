@@ -1232,6 +1232,42 @@ bool DescribeScriptedCaller(JSContext* cx, char* buffer, size_t buflen,
   return true;
 }
 
+typedef void (*StringCallback)(const char* ptr, size_t len, void* target);
+
+bool PendingExceptionStackInfo(JSContext* cx, StringCallback callback,
+                               void* message_target, void* filename_target,
+                               uint32_t* line, uint32_t* col,
+                               JS::MutableHandleValue dest) {
+  JS::ExceptionStack stack(cx);
+  JS::ErrorReportBuilder builder(cx);
+  if (JS::StealPendingExceptionStack(cx, &stack) &&
+      builder.init(cx, stack, JS::ErrorReportBuilder::WithSideEffects)) {
+    JSErrorReport* aReport = builder.report();
+
+    if (!aReport || aReport->isWarning()) {
+      return false;
+    }
+
+    const char* message = aReport->message().c_str();
+    if (!message) {
+      message = builder.toStringResult().c_str();
+    }
+
+    callback(message, strlen(message), message_target);
+
+    const char* filename = aReport->filename.c_str();
+    callback(filename, strlen(filename), filename_target);
+
+    *line = aReport->lineno;
+    *col = aReport->column.oneOriginValue();
+    dest.set(stack.exception());
+
+    return true;
+  }
+
+  return false;
+}
+
 void SetDataPropertyDescriptor(JS::MutableHandle<JS::PropertyDescriptor> desc,
                                JS::HandleValue value, uint32_t attrs) {
   desc.set(JS::PropertyDescriptor::Data(value, attrs));

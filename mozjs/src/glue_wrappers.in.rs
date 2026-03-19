@@ -22,6 +22,7 @@ wrap!(glue: pub fn JS_GetModulePrivate(module: *mut JSObject, dest: MutableHandl
 wrap!(glue: pub fn JS_GetScriptedCallerPrivate(cx: *mut JSContext, dest: MutableHandleValue));
 wrap!(glue: pub fn JS_GetRegExpFlags(cx: *mut JSContext, obj: HandleObject, flags: *mut RegExpFlags));
 wrap!(glue: pub fn EncodeStringToUTF8(cx: *mut JSContext, str_: HandleString, cb: EncodedStringCallback));
+wrap!(glue: pub fn PendingExceptionStackInfo(cx: *mut JSContext, callback: StringCallback, message_target: *mut ::std::os::raw::c_void, filename_target: *mut ::std::os::raw::c_void, line: *mut u32, col: *mut u32, dest: MutableHandleValue) -> bool);
 wrap!(glue: pub fn SetDataPropertyDescriptor(desc: MutableHandle<PropertyDescriptor>, value: HandleValue, attrs: u32));
 wrap!(glue: pub fn SetAccessorPropertyDescriptor(desc: MutableHandle<PropertyDescriptor>, getter: HandleObject, setter: HandleObject, attrs: u32));
 wrap!(glue: pub fn StackGCVectorValueLength(vec: Handle<StackGCVector<Value, TempAllocPolicy>>) -> u32);
