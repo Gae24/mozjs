@@ -1066,14 +1066,11 @@ pub struct ErrorInfo {
 }
 
 unsafe extern "C" fn fill_string_callback(ptr: *const c_char, len: usize, target: *mut c_void) {
+    assert!(!ptr.is_null());
     let target = &mut *(target as *mut String);
 
-    if ptr.is_null() {
-        return;
-    }
-
     let slice = slice::from_raw_parts(ptr as *const u8, len);
-    *target = str::from_utf8_unchecked(slice).to_owned();
+    target.push_str(str::from_utf8_unchecked(slice));
 }
 
 /// Retrieve error info from the pending exception stack, by clearing it.
@@ -1091,8 +1088,8 @@ pub unsafe fn error_info_from_exception_stack(
     if !PendingExceptionStackInfo(
         cx,
         Some(fill_string_callback),
-        &mut message as *mut String as *mut c_void,
-        &mut filename as *mut String as *mut c_void,
+        &raw mut message as *mut c_void,
+        &raw mut filename as *mut c_void,
         &mut line,
         &mut col,
         rval,

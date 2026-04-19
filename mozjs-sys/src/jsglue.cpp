@@ -1256,7 +1256,9 @@ bool PendingExceptionStackInfo(JSContext* cx, StringCallback callback,
     callback(message, strlen(message), message_target);
 
     const char* filename = aReport->filename.c_str();
-    callback(filename, strlen(filename), filename_target);
+    if (filename) {
+      callback(filename, strlen(filename), filename_target);
+    }
 
     *line = aReport->lineno;
     *col = aReport->column.oneOriginValue();
