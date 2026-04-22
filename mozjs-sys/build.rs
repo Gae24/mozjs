@@ -222,8 +222,21 @@ fn build_spidermonkey(build_dir: &Path) {
     cppflags.push(get_cc_rs_env_os("CPPFLAGS").unwrap_or_default());
     cmd.env("CPPFLAGS", cppflags);
 
-    if let Some(makeflags) = env::var_os("CARGO_MAKEFLAGS") {
-        cmd.env("MAKEFLAGS", makeflags);
+    // With make 4.4 a new jobserver style was added, which cargo doesn't support yet.
+    // Unfortunately, the old pipe jobserver that cargo exposes, has a new bug in 4.4,
+    // which is exposed by spidermonkeys makefiles and makes compilation largely
+    // single-threaded.
+    // The workaround can be removed / adapted once cargo supports the new jobserver:
+    // <https://github.com/rust-lang/cargo/issues/13483>
+    if is_buggy_make_version() {
+        // worst-case we'll get 2xNUM_JOBS jobs, since we will have two independant job servers
+        let num_jobs = env::var("NUM_JOBS").expect("NUM_JOBS should be set by cargo");
+        cmd.arg(format!("--jobs={num_jobs}"));
+    } else {
+        // Inherit the jobserver from cargo
+        if let Some(makeflags) = env::var_os("CARGO_MAKEFLAGS") {
+            cmd.env("MAKEFLAGS", makeflags);
+        }
     }
 
     let mut cxxflags = vec![];
@@ -287,6 +300,25 @@ fn cbindgen_bidi(build_dir: &Path) {
       .write_to_file(root_to_bidi(build_dir).join("unicode_bidi_ffi_generated.h"));
 }
 */
+
+fn is_buggy_make_version() -> bool {
+    if let Ok(output) = Command::new("gmake")
+        .arg("--help")
+        .output()
+        .or_else(|_| Command::new("make").arg("--help").output())
+    {
+        let Ok(output) = String::from_utf8(output.stdout) else {
+            println!("cargo:warning=Output from make was not valid utf-8. Can't determine version");
+            return false;
+        };
+        // --jobserver-style was added in Make 4.4, and hence can tell us if we have a version
+        // of make that is incompatible with cargos pipe jobserver (in spidermonkey).
+        output.contains("--jobserver-style")
+    } else {
+        println!("cargo:warning=Couldn't invoke make --help to determine make version");
+        false
+    }
+}
 
 fn build(build_dir: &Path, target: BuildTarget) {
     let mut build = cc::Build::new();
