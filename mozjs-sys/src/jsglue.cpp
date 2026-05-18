@@ -1248,6 +1248,13 @@ bool PendingExceptionStackInfo(JSContext* cx, StringCallback callback,
       return false;
     }
 
+    if (aReport->isMuted) {
+      // The other fields have already the default value.
+      const char* message = "Script error.";
+      callback(message, strlen(message), message_target);
+      return true;
+    }
+
     const char* message = aReport->message().c_str();
     if (!message) {
       message = builder.toStringResult().c_str();
