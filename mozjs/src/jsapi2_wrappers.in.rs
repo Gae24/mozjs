@@ -341,6 +341,7 @@ wrap!(jsapi: pub fn FinishCollectingDelazifications1(cx: &mut JSContext, module:
 wrap!(jsapi: pub fn FinishCollectingDelazifications2(cx: &JSContext, script: Handle<*mut JSScript>, stencilOut: *mut *mut Stencil) -> bool);
 wrap!(jsapi: pub fn AbortCollectingDelazifications(script: Handle<*mut JSScript>));
 wrap!(jsapi: pub fn AbortCollectingDelazifications1(module: Handle<*mut JSObject>));
+wrap!(jsapi: pub fn ConvertFrontendErrorsToRuntimeErrors(cx: &JSContext, fc: *mut FrontendContext, options: *const ReadOnlyCompileOptions) -> bool);
 wrap!(jsapi: pub fn EnsureNonInlineArrayBufferOrView(cx: &mut JSContext, obj: *mut JSObject) -> bool);
 wrap!(jsapi: pub fn ForceLexicalInitialization(cx: &JSContext, obj: HandleObject) -> bool);
 wrap!(jsapi: pub fn JS_ReportOutOfMemory(cx: &JSContext));

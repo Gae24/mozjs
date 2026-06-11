@@ -1661,6 +1661,7 @@ pub mod wrappers2 {
     use crate::jsapi::ExceptionStackBehavior;
     use crate::jsapi::ForOfIterator;
     use crate::jsapi::ForOfIterator_NonIterableBehavior;
+    use crate::jsapi::FrontendContext;
     use crate::jsapi::HandleObjectVector;
     use crate::jsapi::InstantiateOptions;
     use crate::jsapi::JSClass;

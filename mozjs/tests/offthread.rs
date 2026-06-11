@@ -6,13 +6,16 @@ use std::ptr;
 use std::sync::mpsc::channel;
 use std::sync::Arc;
 
-use mozjs::jsapi::{DelazificationOption, InstantiateOptions, OnNewGlobalHookOption};
+use mozjs::jsapi::{InstantiateOptions, OnNewGlobalHookOption};
 use mozjs::jsval::UndefinedValue;
 use mozjs::offthread::compile_to_stencil_offthread;
 use mozjs::realm::AutoRealm;
 use mozjs::rooted;
 use mozjs::rust::wrappers2::{InstantiateGlobalStencil, JS_ExecuteScript, JS_NewGlobalObject};
-use mozjs::rust::{CompileOptionsWrapper, JSEngine, RealmOptions, Runtime, SIMPLE_GLOBAL_CLASS};
+use mozjs::rust::{
+    CompileOptionsWrapper, JSEngine, OwningCompileOptionsWrapper, RealmOptions, Runtime,
+    SIMPLE_GLOBAL_CLASS,
+};
 
 #[test]
 fn offthread() {
@@ -38,26 +41,28 @@ fn offthread() {
         let options = CompileOptionsWrapper::new(context, c"test".to_owned(), 1);
         let options_ptr = options.ptr as *const _;
         let (sender, receiver) = channel();
-        let offthread_token = compile_to_stencil_offthread(options_ptr, src, move |stencil| {
-            sender.send(stencil).unwrap();
-            None
-        });
+        let offthread_token =
+            compile_to_stencil_offthread(options_ptr, src, move |stencil, storage| {
+                sender.send((stencil, storage)).unwrap();
+                None
+            });
 
-        let stencil = receiver.recv().unwrap();
+        let (stencil, mut storage) = receiver.recv().unwrap();
 
         assert!(offthread_token.finish().is_none());
 
-        let options = InstantiateOptions {
-            skipFilenameValidation: false,
-            hideScriptFromDebugger: false,
-            deferDebugMetadata: false,
-            eagerDelazificationStrategy_: DelazificationOption::OnDemandOnly,
+        let instantiate_options = InstantiateOptions {
+            skipFilenameValidation: (*options.ptr)._base.skipFilenameValidation_,
+            hideScriptFromDebugger: (*options.ptr)._base.hideScriptFromDebugger_,
+            deferDebugMetadata: (*options.ptr)._base.deferDebugMetadata_,
+            eagerDelazificationStrategy_: (*options.ptr)._base.eagerDelazificationStrategy_,
         };
+
         rooted!(&in(context) let script = InstantiateGlobalStencil(
             context,
-            &options,
+            &instantiate_options,
             *stencil,
-            ptr::null_mut(),
+            storage.as_mut_ptr(),
         ));
 
         rooted!(&in(context) let mut rval = UndefinedValue());
