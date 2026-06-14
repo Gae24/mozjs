@@ -22,6 +22,7 @@ use self::wrappers::{
     StackGCVectorStringAtIndex, StackGCVectorStringLength, StackGCVectorValueAtIndex,
     StackGCVectorValueLength,
 };
+use self::wrappers2::JS_NewOwningCompileOptions1;
 use self::wrappers2::ToStringSlow;
 use crate::consts::{JSCLASS_GLOBAL_SLOT_COUNT, JSCLASS_RESERVED_SLOTS_MASK};
 use crate::consts::{JSCLASS_IS_DOMJSCLASS, JSCLASS_IS_GLOBAL};
@@ -543,6 +544,15 @@ impl OwningCompileOptionsWrapper {
     pub fn new_for_fc(fc: &FrontendContext, options: *const ReadOnlyCompileOptions) -> Self {
         Self {
             ptr: unsafe { OwningCompileOptions_for_fc(**fc, options) },
+        }
+    }
+
+    pub fn new_copied(
+        cx: &mut crate::context::JSContext,
+        options: *const ReadOnlyCompileOptions,
+    ) -> Self {
+        Self {
+            ptr: unsafe { JS_NewOwningCompileOptions1(cx, options) },
         }
     }
 

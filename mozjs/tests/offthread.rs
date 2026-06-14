@@ -18,6 +18,7 @@ use mozjs::rust::{
 };
 
 #[test]
+#[cfg_attr(target_arch = "wasm32", ignore)]
 fn offthread() {
     let engine = JSEngine::init().unwrap();
     let mut runtime = Runtime::new(engine.handle());

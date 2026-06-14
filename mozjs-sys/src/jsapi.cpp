@@ -69,6 +69,15 @@ JS::OwningCompileOptions* JS_NewOwningCompileOptions(JSContext* cx) {
   return result;
 }
 
+JS::OwningCompileOptions* JS_NewOwningCompileOptions(
+    JSContext* aCx, const JS::ReadOnlyCompileOptions& rhs) {
+  JS::OwningCompileOptions* oco = new JS::OwningCompileOptions(aCx);
+  if (!oco->copy(aCx, rhs)) {
+    return nullptr;
+  }
+  return oco;
+}
+
 JS::OwningCompileOptions* OwningCompileOptions_for_fc(
     JS::FrontendContext* fc, const JS::ReadOnlyCompileOptions& rhs) {
   JS::OwningCompileOptions* oco = new JS::OwningCompileOptions(

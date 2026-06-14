@@ -650,6 +650,7 @@ wrap!(jsapi: pub fn JS_CopyOwnPropertiesAndPrivateFields(cx: &mut JSContext, tar
 wrap!(jsapi: pub fn JS_WrapPropertyDescriptor(cx: &mut JSContext, desc: MutableHandle<PropertyDescriptor>) -> bool);
 wrap!(jsapi: pub fn JS_DefineFunctionsWithHelp(cx: &mut JSContext, obj: HandleObject, fs: *const JSFunctionSpecWithHelp) -> bool);
 wrap!(jsapi: pub fn JS_NewOwningCompileOptions(cx: &mut JSContext) -> *mut OwningCompileOptions);
+wrap!(jsapi: pub fn JS_NewOwningCompileOptions1(aCx: &mut JSContext, rhs: *const ReadOnlyCompileOptions) -> *mut OwningCompileOptions);
 wrap!(jsapi: pub fn JS_StackCapture_FirstSubsumedFrame(cx: &mut JSContext, ignoreSelfHostedFrames: bool, capture: *mut StackCapture));
 wrap!(jsapi: pub fn NewExternalArrayBuffer(cx: &mut JSContext, nbytes: usize, contents: *mut ::std::os::raw::c_void, freeFunc: BufferContentsFreeFunc, freeUserData: *mut ::std::os::raw::c_void) -> *mut JSObject);
 wrap!(jsapi: pub fn NewArrayBufferWithContents(cx: &mut JSContext, nbytes: usize, contents: *mut ::std::os::raw::c_void) -> *mut JSObject);
