@@ -40,6 +40,7 @@ use crate::jsapi::js::frontend::InitialStencilAndDelazifications;
 use crate::jsapi::mozilla::Utf8Unit;
 use crate::jsapi::shadow::BaseShape;
 use crate::jsapi::HandleObjectVector as RawHandleObjectVector;
+use crate::jsapi::InstantiateOptions;
 use crate::jsapi::JS_AddExtraGCRootsTracer;
 use crate::jsapi::MutableHandleIdVector as RawMutableHandleIdVector;
 use crate::jsapi::OwningCompileOptions_for_fc;
@@ -595,6 +596,19 @@ impl CompileOptionsWrapper {
 impl Drop for CompileOptionsWrapper {
     fn drop(&mut self) {
         unsafe { DeleteCompileOptions(self.ptr) }
+    }
+}
+
+impl From<&CompileOptionsWrapper> for InstantiateOptions {
+    fn from(value: &CompileOptionsWrapper) -> Self {
+        let compile_options = unsafe { &(*value.ptr)._base };
+        InstantiateOptions {
+            skipFilenameValidation: compile_options.skipFilenameValidation_,
+            hideScriptFromDebugger: compile_options.hideScriptFromDebugger_,
+            deferDebugMetadata: compile_options.deferDebugMetadata_,
+            eagerDelazificationStrategy_: compile_options.eagerDelazificationStrategy_,
+            eagerBaselineStrategy_: compile_options.eagerBaselineStrategy_,
+        }
     }
 }
 
